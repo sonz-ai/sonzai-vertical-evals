@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.uv-cache/
+*.egg-info/
+build/
+dist/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Iteration outputs are gitignored by default. Use `*/results/*` so the
+# directories themselves stay tracked. Allowlist headline receipts that
+# the README cites with `!` lines below as runs land.
+benchmarks/*/results/*
+
+# Test fixtures stay tracked
+!benchmarks/*/tests/fixtures/*
+
+# Headline receipts — add one line per published result as it lands.
+!benchmarks/*/results/.gitkeep
+# Demo dataset for the viewer — committed so a fresh clone has data to show.
+!benchmarks/razer/results/sonzai_20260506-195328.json
+# v1 head-to-head receipts cited in benchmarks/razer/README.md
+!benchmarks/razer/results/sonzai_20260506-202530.json
+!benchmarks/razer/results/mempalace_20260506-201557.json
+
+# Env
+.env
+.env.local

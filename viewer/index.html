@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sonzai × Razer — Demo Viewer</title>
+  <link rel="stylesheet" href="viewer.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">●</span>
+      <span class="title">Sonzai × Razer — Customer-Companion Eval</span>
+    </div>
+    <div class="loadbar">
+      <label class="filebtn">
+        Load run JSON
+        <input id="file" type="file" accept=".json" hidden />
+      </label>
+      <span id="filename" class="filename">no run loaded</span>
+      <button id="loadDefault" class="loaddefault" type="button">load latest sonzai run</button>
+    </div>
+  </header>
+
+  <main id="main" class="empty">
+    <section id="welcome" class="welcome">
+      <h1>What you're about to watch</h1>
+      <p>
+        A live replay of the Sonzai-powered Razer AI desk companion talking with
+        a 4-person household across 18 sessions and 6 simulated months — and
+        then a question-answering pass against the same agent showing what it
+        remembered, what it got right, and where its mood went.
+      </p>
+      <p class="getting-started">
+        Click <em>Load run JSON</em> above and pick a file from
+        <code>benchmarks/razer/results/</code>, or drop it onto this window.
+      </p>
+    </section>
+
+    <section id="overview" class="hidden">
+      <h2>Run overview</h2>
+      <div class="overview-grid">
+        <div class="card">
+          <div class="card-label">Backend</div>
+          <div id="ov-backend" class="card-big"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Wall time</div>
+          <div id="ov-elapsed" class="card-big"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Sessions simulated</div>
+          <div id="ov-sessions" class="card-big"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">QA accuracy</div>
+          <div id="ov-accuracy" class="card-big"></div>
+        </div>
+      </div>
+
+      <h3>Household</h3>
+      <div id="household" class="household"></div>
+
+      <h3>Per-category accuracy</h3>
+      <table id="qa-aggregate" class="cat-table">
+        <thead><tr><th>Category</th><th class="num">N</th><th class="num">Correct</th><th class="num">Accuracy</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="phase1" class="hidden phase">
+      <div class="phase-header">
+        <h2>Phase 1 — Live conversation</h2>
+        <p>
+          Each session below is replayed turn-by-turn. The user's lines are
+          scripted from the dataset; the agent's lines are <em>live</em>
+          responses from the Sonzai-backed AI desk companion. Hover a
+          mood reading to see all dimensions.
+        </p>
+      </div>
+      <div id="sessions" class="sessions"></div>
+    </section>
+
+    <section id="phase2" class="hidden phase">
+      <div class="phase-header">
+        <h2>Phase 2 — Question answering</h2>
+        <p>
+          After the conversation arc, the same Sonzai agent is asked
+          targeted questions. Each row shows the question, what the gold
+          answer says, what the agent answered, and whether the LLM judge
+          (plus deterministic substring guards) marked it correct.
+        </p>
+      </div>
+      <div class="qa-controls">
+        <input id="qa-search" placeholder="Filter QA by text…" />
+        <select id="qa-cat">
+          <option value="">all categories</option>
+        </select>
+        <select id="qa-correct">
+          <option value="">all verdicts</option>
+          <option value="true">correct only</option>
+          <option value="false">incorrect only</option>
+        </select>
+      </div>
+      <div id="qa-list" class="qa-list"></div>
+    </section>
+  </main>
+
+  <script src="viewer.js" defer></script>
+</body>
+</html>

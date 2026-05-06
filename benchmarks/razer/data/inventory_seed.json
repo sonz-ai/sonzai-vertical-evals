@@ -1,0 +1,27 @@
+{
+  "_comment": "Initial inventory state at the start of the simulated arc (Jan 2026). Sessions then add/remove/transfer items; the benchmark evaluates whether the memory layer keeps the inventory consistent.",
+  "items_by_owner": {
+    "marcus-okafor-tan": [
+      {"item_id": "inv-marcus-001", "item_type": "peripheral",       "label": "Razer DeathAdder V3 Pro", "properties": {"category": "mouse", "color": "black", "purchase_date": "2024-04-12", "registered_serial": "DAV3P-0921-MX", "active": true}},
+      {"item_id": "inv-marcus-002", "item_type": "peripheral",       "label": "Razer Huntsman V3 Pro TKL", "properties": {"category": "keyboard", "switch_type": "analog optical", "purchase_date": "2024-08-30"}},
+      {"item_id": "inv-marcus-003", "item_type": "peripheral",       "label": "Razer BlackShark V2 Pro (2023)", "properties": {"category": "headset", "wireless": true, "purchase_date": "2023-11-04", "active": true}},
+      {"item_id": "inv-marcus-004", "item_type": "subscription",     "label": "Razer Cortex+ Family", "properties": {"renews": "monthly", "covers_household": true, "since": "2025-01-15"}},
+      {"item_id": "inv-marcus-005", "item_type": "currency_balance", "label": "Razer Gold balance", "properties": {"amount_usd": 142.30, "as_of": "2026-01-01"}},
+      {"item_id": "inv-marcus-006", "item_type": "device",           "label": "Razer Blade 16 (2025) workstation", "properties": {"role": "family-pc", "shared_with": ["priya-iyer-okafor-tan", "aiden-okafor-tan"], "primary_user": "marcus-okafor-tan"}}
+    ],
+    "priya-iyer-okafor-tan": [
+      {"item_id": "inv-priya-001", "item_type": "peripheral", "label": "Razer Pro Type Ultra", "properties": {"category": "keyboard", "wireless": true, "use_case": "office work", "rgb": false, "purchase_date": "2024-03-20"}},
+      {"item_id": "inv-priya-002", "item_type": "peripheral", "label": "Razer Pro Click", "properties": {"category": "mouse", "ergonomic": true, "purchase_date": "2024-03-20"}},
+      {"item_id": "inv-priya-003", "item_type": "peripheral", "label": "Razer Anzu (audio glasses)", "properties": {"category": "audio", "use_case": "calls + walks", "purchase_date": "2024-12-25"}}
+    ],
+    "aiden-okafor-tan": [
+      {"item_id": "inv-aiden-001", "item_type": "peripheral", "label": "Razer Viper Mini Signature Edition (hand-me-down)", "properties": {"category": "mouse", "previously_owned_by": "marcus-okafor-tan", "transferred_on": "2025-09-08", "active": true}},
+      {"item_id": "inv-aiden-002", "item_type": "peripheral", "label": "Razer BlackWidow V4 75%", "properties": {"category": "keyboard", "switch_type": "tactile", "purchase_date": "2025-12-25", "gifted_by": "marcus-okafor-tan"}},
+      {"item_id": "inv-aiden-003", "item_type": "peripheral", "label": "Razer Kraken V3 X", "properties": {"category": "headset", "purchase_date": "2024-05-15"}},
+      {"item_id": "inv-aiden-004", "item_type": "currency_balance", "label": "Razer Gold balance", "properties": {"amount_usd": 18.50, "as_of": "2026-01-01"}}
+    ],
+    "lila-okafor-tan": [
+      {"item_id": "inv-lila-001", "item_type": "peripheral", "label": "Razer Kishi V2 Pro (teal)", "properties": {"category": "mobile-controller", "for_device": "lila-tablet", "purchase_date": "2026-02-08", "gifted_by": "priya-iyer-okafor-tan"}}
+    ]
+  }
+}

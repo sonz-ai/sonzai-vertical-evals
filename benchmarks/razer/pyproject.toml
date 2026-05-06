@@ -1,0 +1,35 @@
+[project]
+name = "sonzai-razer-bench"
+version = "0.1.0"
+description = "Razer customer-companion benchmark for the Sonzai Mind Layer."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "sonzai>=0.6.0",
+    "google-genai>=0.7.0",
+    "pydantic>=2.0",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+# Required by the --backend mempalace path (Razer bench head-to-head).
+# The mempalace package itself is expected as a sibling clone at
+# `sonzai-sdk/mempalace/`; chromadb is its runtime dep we have to bring in.
+mempalace = [
+    "chromadb>=0.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sonzai_razer_bench"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
