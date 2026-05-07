@@ -40,9 +40,11 @@ from .dataset import (
 )
 from .scoring import (
     DEFAULT_JUDGE_MODEL,
+    PillarGrade,
     QAResult,
     aggregate,
     check_guards,
+    compute_pillars,
     llm_judge_async,
 )
 
@@ -111,6 +113,16 @@ def _print_table(agg: dict[str, dict[str, float]]) -> None:
             f"{'TOTAL'.ljust(28)}{int(row['n']):>6}{int(row['correct']):>10}"
             f"{row['accuracy']:>10.0%}"
         )
+
+
+def _print_pillars(pillars: list[PillarGrade]) -> None:
+    print("\n=== AVA-readiness pillar scorecard ===")
+    for p in pillars:
+        mark = "✓ PASS" if p.passed else "✗ FAIL"
+        print(f"  {p.name} {p.title.ljust(47)} {mark}")
+        print(f"      {p.notes}")
+    n_pass = sum(1 for p in pillars if p.passed)
+    print(f"\nPillars passed: {n_pass}/{len(pillars)}")
 
 
 def _qa_to_meta(qa: QA) -> dict:
@@ -378,6 +390,15 @@ async def _run_sonzai(args: argparse.Namespace) -> dict:
         await client.close()
 
     elapsed = time.time() - t0
+    qa_agg = aggregate(qa_results)
+    sessions_dump = [asdict(s) for s in session_records]
+    pillars = compute_pillars(
+        qa_aggregate=qa_agg,
+        callback_rate_final=final_callback_rate,
+        personality_final=final_personality,
+        session_records=sessions_dump,
+        baseline_qa_aggregate=_load_baseline_aggregate(args.compare_with),
+    )
     return {
         "backend": "sonzai",
         "elapsed_seconds": elapsed,
@@ -395,16 +416,34 @@ async def _run_sonzai(args: argparse.Namespace) -> dict:
             {"a": r.a, "b": r.b, "type": r.type, "since": r.since}
             for r in personas.household_relationships
         ],
-        "sessions": [asdict(s) for s in session_records],
+        "sessions": sessions_dump,
         "snapshots": snapshot_records,
         "qa": [
             {**_qa_to_meta(q), **asdict(r)}
             for q, r in zip(qa, qa_results)
         ],
-        "qa_aggregate": aggregate(qa_results),
+        "qa_aggregate": qa_agg,
         "personality_final": final_personality,
         "callback_rate_final": final_callback_rate,
+        "pillars": [p.to_dict() for p in pillars],
     }
+
+
+def _load_baseline_aggregate(path: Path | None) -> dict | None:
+    """Read a prior run JSON and pull out its qa_aggregate for P2.
+
+    Returns None if no path given or read fails — pillar P2 will then
+    surface as 'requires baseline comparison' rather than silently passing.
+    """
+    if path is None:
+        return None
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        return data.get("qa_aggregate")
+    except Exception as e:
+        logger.warning("could not load --compare-with %s: %s", path, e)
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -453,6 +492,14 @@ async def _run_mempalace(args: argparse.Namespace) -> dict:
         qa_results = list(await asyncio.gather(*(_one(q) for q in qa)))
 
     elapsed = time.time() - t0
+    qa_agg = aggregate(qa_results)
+    pillars = compute_pillars(
+        qa_aggregate=qa_agg,
+        callback_rate_final={},  # MemPalace has no callback measurement
+        personality_final={},    # MemPalace has no personality model
+        session_records=session_records,
+        baseline_qa_aggregate=_load_baseline_aggregate(args.compare_with),
+    )
     return {
         "backend": "mempalace",
         "elapsed_seconds": elapsed,
@@ -474,7 +521,8 @@ async def _run_mempalace(args: argparse.Namespace) -> dict:
             {**_qa_to_meta(q), **asdict(r)}
             for q, r in zip(qa, qa_results)
         ],
-        "qa_aggregate": aggregate(qa_results),
+        "qa_aggregate": qa_agg,
+        "pillars": [p.to_dict() for p in pillars],
     }
 
 
@@ -506,6 +554,14 @@ async def _run_baseline(args: argparse.Namespace) -> dict:
 
         qa_results = list(await asyncio.gather(*(_one(q) for q in qa)))
     elapsed = time.time() - t0
+    qa_agg = aggregate(qa_results)
+    pillars = compute_pillars(
+        qa_aggregate=qa_agg,
+        callback_rate_final={},
+        personality_final={},
+        session_records=[],
+        baseline_qa_aggregate=_load_baseline_aggregate(args.compare_with),
+    )
     return {
         "backend": "baseline",
         "elapsed_seconds": elapsed,
@@ -523,7 +579,68 @@ async def _run_baseline(args: argparse.Namespace) -> dict:
             {**_qa_to_meta(q), **asdict(r)}
             for q, r in zip(qa, qa_results)
         ],
-        "qa_aggregate": aggregate(qa_results),
+        "qa_aggregate": qa_agg,
+        "pillars": [p.to_dict() for p in pillars],
+    }
+
+
+async def _run_stateless_rag(args: argparse.Namespace) -> dict:
+    from .backends import stateless_rag as rag_backend
+
+    personas = load_personas()
+    inventory_seed = load_inventory_seed()
+    sessions = load_sessions()
+    qa = _filter_qa(load_qa(), args.categories, args.limit)
+
+    t0 = time.time()
+    state = rag_backend.ingest_sessions(
+        personas=personas,
+        inventory_seed=inventory_seed,
+        sessions=sessions,
+        model=args.baseline_model,
+        top_k=args.rag_top_k,
+    )
+    qa_results: list[QAResult] = []
+    if not args.ingest_only:
+        sem = asyncio.Semaphore(max(1, args.qa_concurrency))
+
+        async def _one(q: QA) -> QAResult:
+            async with sem:
+                answer = await rag_backend.ask(state=state, qa=q)
+                return await _grade_one(
+                    qa=q, agent_answer=answer, judge_model=args.judge_model
+                )
+
+        qa_results = list(await asyncio.gather(*(_one(q) for q in qa)))
+    elapsed = time.time() - t0
+    qa_agg = aggregate(qa_results)
+    pillars = compute_pillars(
+        qa_aggregate=qa_agg,
+        callback_rate_final={},
+        personality_final={},
+        session_records=[],
+        baseline_qa_aggregate=_load_baseline_aggregate(args.compare_with),
+    )
+    return {
+        "backend": "stateless-rag",
+        "elapsed_seconds": elapsed,
+        "rag_top_k": args.rag_top_k,
+        "personas_summary": {
+            m.user_id: {
+                "display_name": m.display_name,
+                "age": m.age,
+                "role": m.role,
+                "background": m.background,
+            }
+            for m in personas.members
+        },
+        "sessions": [],  # stateless-rag doesn't run a live convo
+        "qa": [
+            {**_qa_to_meta(q), **asdict(r)}
+            for q, r in zip(qa, qa_results)
+        ],
+        "qa_aggregate": qa_agg,
+        "pillars": [p.to_dict() for p in pillars],
     }
 
 
@@ -551,9 +668,13 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     p.add_argument(
         "--backend",
-        choices=("sonzai", "baseline", "mempalace"),
+        choices=("sonzai", "baseline", "mempalace", "stateless-rag"),
         default="sonzai",
-        help="Which memory backend to evaluate.",
+        help="Which memory backend to evaluate. `baseline` = stateless full-"
+        "history-in-prompt (upper bound of context-stuffing). `stateless-rag` "
+        "= top-K embedded retrieval over sessions (cheapest off-the-shelf "
+        "RAG). `mempalace` = verbatim drawer retrieval. `sonzai` = the Mind "
+        "Layer.",
     )
     p.add_argument(
         "--categories",
@@ -625,7 +746,19 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL)
     p.add_argument(
         "--baseline-model", default="gemini-3.1-flash-lite-preview",
-        help="Model for the baseline (full-history-in-prompt) backend.",
+        help="Model for the baseline / stateless-rag / mempalace backends.",
+    )
+    p.add_argument(
+        "--rag-top-k", type=int, default=5,
+        help="(stateless-rag backend) Top-K sessions retrieved per question. "
+        "Lower = harder for the baseline, higher = easier. Default 5.",
+    )
+    p.add_argument(
+        "--compare-with", type=Path, default=None,
+        help="Path to a prior result JSON (typically a stateless baseline) "
+        "to use as the comparison input for AVA-readiness pillar P2 "
+        "(differentiation from a stateless LLM). If omitted, P2 is reported "
+        "as requiring a comparison input rather than silently passing.",
     )
     p.add_argument("--output", type=Path, default=None)
     p.add_argument("-v", "--verbose", action="count", default=0)
@@ -651,6 +784,8 @@ async def _amain(args: argparse.Namespace) -> int:
         result = await _run_sonzai(args)
     elif args.backend == "mempalace":
         result = await _run_mempalace(args)
+    elif args.backend == "stateless-rag":
+        result = await _run_stateless_rag(args)
     else:
         result = await _run_baseline(args)
 
@@ -660,6 +795,16 @@ async def _amain(args: argparse.Namespace) -> int:
 
     if not args.ingest_only:
         _print_table(result.get("qa_aggregate", {}))
+        pillar_dicts = result.get("pillars") or []
+        if pillar_dicts:
+            pillars = [
+                PillarGrade(
+                    name=p["name"], title=p["title"], passed=p["passed"],
+                    subscores=p.get("subscores", {}), notes=p.get("notes", ""),
+                )
+                for p in pillar_dicts
+            ]
+            _print_pillars(pillars)
 
     print(f"\nElapsed : {result['elapsed_seconds']:.1f}s")
     print(f"Output  : {out}")

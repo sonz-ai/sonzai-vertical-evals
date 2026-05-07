@@ -1256,6 +1256,46 @@
       ]
     },
     {
+      "session_id": "s031",
+      "user_id": "aiden-okafor-tan",
+      "device_context": "aiden-pc-shared",
+      "timestamp": "2026-04-08T21:30:00+08:00",
+      "topic": "Aiden asks for smoke-coordination help with JK on Bind",
+      "summary": "Aiden's school team is drilling Bind A-exec for finals prep. He plays Jett (entry); JK plays Omen (IGL/controller). Aiden asks the agent how to time his Tailwind dash off JK's Hookah smoke without front-burning his utility.",
+      "turns": [
+        {"speaker": "user", "text": "ok bind a exec. im jetting in. jk smokes hookah from default. when do i go?"},
+        {"speaker": "assistant", "text": "Wait for JK's smoke to bloom — Omen's Dark Cover takes about 1.2s to deploy and another 0.8s before it's visually solid. Dash on the second beat, not the first."},
+        {"speaker": "user", "text": "wait that long? feels like the lurkers will rotate"},
+        {"speaker": "assistant", "text": "If you go on the deploy frame, defenders see your silhouette through the haze and pre-fire Showers. Two beats is roughly 2 seconds; B-site rotators won't be at A in that window. Trust JK's call on the smoke — that's the IGL's job."},
+        {"speaker": "user", "text": "and after the dash? updraft showers or peek truck?"},
+        {"speaker": "assistant", "text": "On Bind A, peek Truck first — it's the closer angle and the post-smoke timing favors the entry. Save updraft for retake if you need to high-ground the Heaven push, or for B retake later in the half."},
+        {"speaker": "user", "text": "ravi said i should pop my own cloudbursts before dashing"},
+        {"speaker": "assistant", "text": "Cloudburst is small (5m radius, 4.5s) — useful to mask the dash exit on Showers, not as the entry smoke itself. Layer it: JK's Dark Cover for the corridor, your cloudburst on the Showers angle as you land. Don't burn it pre-dash."},
+        {"speaker": "user", "text": "got it. one more — if jk dies before smoking should i still dash?"},
+        {"speaker": "assistant", "text": "No — Bind A without controller smoke is a 1v1 trade at best. Reset to Bath, let the team play the kill spread, and look for a B-site flank with Tailwind instead. Pre-dash without smoke is how the team loses its entry slot."}
+      ]
+    },
+    {
+      "session_id": "s032",
+      "user_id": "aiden-okafor-tan",
+      "device_context": "aiden-pc-shared",
+      "timestamp": "2026-04-22T21:45:00+08:00",
+      "topic": "Aiden asks why first-bullet duels feel off after the Jett switch",
+      "summary": "Two weeks into the new Synapse profile (-10% DPI vs Phoenix-era setting). Aiden says first-bullet flicks are missing more than they used to. The agent connects the dots: lower DPI means bigger arm-sweep per micro-flick, the muscle memory needs roughly 3-4 weeks to fully bed in, and Jett's playstyle wants peeker's-advantage timing not Phoenix's flash-into-fight.",
+      "turns": [
+        {"speaker": "user", "text": "im tilting. losing every first bullet duel this week. ten games. ten first bullets missed."},
+        {"speaker": "assistant", "text": "Two-week mark on the new sens — that's the worst window. Your old Phoenix muscle memory says 'flick X cm to the head', but your new Jett DPI means the same flick under-shoots. Aim Lab tracker scenarios will rebuild it faster than ranked grinding."},
+        {"speaker": "user", "text": "should i revert to the phoenix sens then"},
+        {"speaker": "assistant", "text": "I'd hold for one more week before reverting. The -10% is in pro-Jett territory and the bedding-in pain is normal at days 10-21. If you're still missing first-bullet at the 30-day mark, the saved `aiden-valorant-phoenix` profile is one command away."},
+        {"speaker": "user", "text": "fine. what else am i doing wrong"},
+        {"speaker": "assistant", "text": "Watching the s027 scrim demos: you're peeking the same way you did on Phoenix — head-glance, then commit. On Jett you want peeker's advantage — pre-aim the angle, then dash-strafe through. The first bullet should already be on the head model when you're visible to the defender."},
+        {"speaker": "user", "text": "thats a lot to change at once"},
+        {"speaker": "assistant", "text": "Pick one. This week: just the pre-aim. Don't change the dash, don't change the peek angle. Three days of just 'pre-aim before peek' is enough to see if it lifts the first-bullet number."},
+        {"speaker": "user", "text": "ok. ill log it tomorrow"},
+        {"speaker": "assistant", "text": "I'll tag tonight as `pre-aim-week-1` so we can compare your first-bullet hit-rate against the prior 10 games. If it's not up by Sunday we tweak the next thing."}
+      ]
+    },
+    {
       "session_id": "s030",
       "user_id": "marcus-okafor-tan",
       "device_context": "shared-desk-companion",

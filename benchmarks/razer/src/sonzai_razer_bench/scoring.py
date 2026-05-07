@@ -215,3 +215,209 @@ def aggregate(results: list[QAResult]) -> dict[str, dict[str, float]]:
         correct = sum(1 for r in results if r.correct)
         out["TOTAL"] = {"n": n, "correct": correct, "accuracy": correct / n}
     return out
+
+
+# ---------------------------------------------------------------------------
+# AVA-readiness pillar scorecard
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class PillarGrade:
+    """One pillar of the AVA-readiness contract.
+
+    A pillar is a falsifiable claim about what the memory layer must
+    deliver if Razer's product (an AI desk companion that 'grows with
+    you') is going to ship as a real product rather than a tech demo.
+    The bench is the AVA-readiness contract; passing all five pillars
+    is the necessary condition for the contract to hold.
+    """
+
+    name: str               # "P1", ..., "P5"
+    title: str              # human-readable
+    passed: bool            # pillar-level verdict
+    subscores: dict         # numeric inputs the verdict depends on
+    notes: str              # one-sentence rationale
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "title": self.title,
+            "passed": self.passed,
+            "subscores": self.subscores,
+            "notes": self.notes,
+        }
+
+
+def _accuracy(agg: dict, category: str) -> float:
+    row = agg.get(category) or {}
+    return float(row.get("accuracy", 0.0))
+
+
+def _affiliation_delta_for_marcus(session_records: list) -> float:
+    """Heuristic: end-of-arc affiliation toward Marcus minus first-session
+    affiliation toward Marcus. Used as a proxy for 'the agent warmed up'.
+
+    Returns 0.0 if data is missing — pillar then falls back to other inputs.
+    """
+    first: float | None = None
+    last: float | None = None
+    for s in session_records:
+        if isinstance(s, dict):
+            uid = s.get("user_id")
+            turns = s.get("turns") or []
+        else:
+            uid = getattr(s, "user_id", None)
+            turns = getattr(s, "turns", []) or []
+        if uid != "marcus-okafor-tan" or not turns:
+            continue
+        for t in turns:
+            mood = (t.get("mood_after") if isinstance(t, dict)
+                    else getattr(t, "mood_after", {})) or {}
+            aff = mood.get("affiliation")
+            if aff is None:
+                continue
+            if first is None:
+                first = float(aff)
+            last = float(aff)
+    if first is None or last is None:
+        return 0.0
+    return last - first
+
+
+def compute_pillars(
+    *,
+    qa_aggregate: dict,
+    callback_rate_final: dict,
+    personality_final: dict,
+    session_records: list | None = None,
+    baseline_qa_aggregate: dict | None = None,
+) -> list[PillarGrade]:
+    """Grade all five AVA-readiness pillars from a single run.
+
+    P2 only resolves to PASS/FAIL when ``baseline_qa_aggregate`` is
+    provided (typically a stateless-stuff or stateless-rag run). When
+    omitted, P2 is reported as ``passed=False`` with a note explaining
+    the comparison input is missing — never silently passes.
+    """
+    session_records = session_records or []
+
+    # P1 — Persistent identity
+    cross_device = _accuracy(qa_aggregate, "cross-device-continuity")
+    temporal = _accuracy(qa_aggregate, "temporal")
+    multi_hop = _accuracy(qa_aggregate, "multi-hop")
+    shifts = personality_final.get("recent_shifts") or []
+    n_shifts = len(shifts) if isinstance(shifts, list) else 0
+    p1_pass = cross_device >= 0.9 and temporal >= 0.9 and multi_hop >= 0.9 and n_shifts >= 3
+    p1 = PillarGrade(
+        name="P1",
+        title="Persistent identity that survives time and surface",
+        passed=p1_pass,
+        subscores={
+            "cross_device_continuity": cross_device,
+            "temporal": temporal,
+            "multi_hop": multi_hop,
+            "personality_recent_shifts": n_shifts,
+        },
+        notes=(
+            "Cross-device continuity, temporal ordering, multi-hop reasoning "
+            "all ≥90% AND ≥3 attributable personality shifts. Proves Razer's "
+            "'real memory' claim is not marketing."
+        ),
+    )
+
+    # P2 — Differentiation from stateless LLM
+    sonzai_total = _accuracy(qa_aggregate, "TOTAL")
+    if baseline_qa_aggregate is None:
+        p2 = PillarGrade(
+            name="P2",
+            title="Differentiation from a stateless LLM",
+            passed=False,
+            subscores={"sonzai_total": sonzai_total, "baseline_total": None},
+            notes=(
+                "Requires a baseline comparison (e.g. --backend baseline or "
+                "stateless-rag). Sonzai TOTAL must beat baseline TOTAL by ≥40 "
+                "points absolute to close the 'generic chatbot' critique."
+            ),
+        )
+    else:
+        baseline_total = _accuracy(baseline_qa_aggregate, "TOTAL")
+        delta = sonzai_total - baseline_total
+        p2 = PillarGrade(
+            name="P2",
+            title="Differentiation from a stateless LLM",
+            passed=delta >= 0.40,
+            subscores={
+                "sonzai_total": sonzai_total,
+                "baseline_total": baseline_total,
+                "delta": delta,
+            },
+            notes=(
+                f"Sonzai TOTAL {sonzai_total:.0%} vs baseline {baseline_total:.0%} "
+                f"= Δ{delta:+.0%}. Threshold is +40pts to close the 'generic "
+                "chatbot' critique."
+            ),
+        )
+
+    # P3 — Multi-user / household correctness
+    multi_user = _accuracy(qa_aggregate, "multi-user-disambiguation")
+    privacy_leak = _accuracy(qa_aggregate, "privacy-leak")
+    adversarial = _accuracy(qa_aggregate, "adversarial")
+    p3_pass = multi_user >= 0.95 and privacy_leak >= 0.95 and adversarial >= 0.95
+    p3 = PillarGrade(
+        name="P3",
+        title="Multi-user / household correctness",
+        passed=p3_pass,
+        subscores={
+            "multi_user_disambiguation": multi_user,
+            "privacy_leak": privacy_leak,
+            "adversarial": adversarial,
+        },
+        notes=(
+            "Multi-user disambiguation, cross-user privacy leak guards, and "
+            "adversarial abstain all ≥95%. Closes the reviewer-flagged "
+            "'no shared-PC awareness' gap in public AVA."
+        ),
+    )
+
+    # P4 — Companion-grade affect
+    callback_rate = float((callback_rate_final or {}).get("rate", 0.0))
+    affiliation_delta = _affiliation_delta_for_marcus(session_records)
+    # personality shifts already counted above for P1; reuse n_shifts.
+    p4_pass = callback_rate >= 0.40 and affiliation_delta >= 10.0 and n_shifts >= 3
+    p4 = PillarGrade(
+        name="P4",
+        title="Companion-grade affect",
+        passed=p4_pass,
+        subscores={
+            "callback_rate": callback_rate,
+            "marcus_affiliation_delta": affiliation_delta,
+            "personality_recent_shifts": n_shifts,
+        },
+        notes=(
+            "Unprompted callback rate ≥40%, Marcus affiliation drift ≥+10 "
+            "points end-vs-start, ≥3 attributable personality shifts. Closes "
+            "the 'creepy waifu' / 'didn't actually grow with you' critique."
+        ),
+    )
+
+    # P5 — Grounded gaming utility
+    coaching = _accuracy(qa_aggregate, "gameplay-coaching")
+    hardware = _accuracy(qa_aggregate, "hardware-tuning")
+    p5_pass = coaching >= 0.9 and hardware >= 0.9
+    p5 = PillarGrade(
+        name="P5",
+        title="Grounded gaming utility",
+        passed=p5_pass,
+        subscores={
+            "gameplay_coaching": coaching,
+            "hardware_tuning": hardware,
+        },
+        notes=(
+            "Gameplay-coaching and hardware-tuning categories both ≥90%. "
+            "Closes the 'couldn't answer about the game it's analyzing' "
+            "critique from CES 2026 hands-on reviews."
+        ),
+    )
+
+    return [p1, p2, p3, p4, p5]

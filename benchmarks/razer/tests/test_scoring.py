@@ -9,6 +9,7 @@ from sonzai_razer_bench.scoring import (
     QAResult,
     aggregate,
     check_guards,
+    compute_pillars,
 )
 
 
@@ -107,3 +108,87 @@ def test_aggregate_per_category_and_total():
 
 def test_aggregate_handles_empty():
     assert aggregate([]) == {}
+
+
+# ---------------------------------------------------------------------------
+# Pillar scorecard
+# ---------------------------------------------------------------------------
+
+
+def _perfect_aggregate() -> dict:
+    """A qa_aggregate where every relevant category is at 100%."""
+    cats = (
+        "cross-device-continuity", "temporal", "multi-hop",
+        "multi-user-disambiguation", "privacy-leak", "adversarial",
+        "gameplay-coaching", "hardware-tuning",
+    )
+    out: dict = {c: {"n": 1, "correct": 1, "accuracy": 1.0} for c in cats}
+    out["TOTAL"] = {"n": len(cats), "correct": len(cats), "accuracy": 1.0}
+    return out
+
+
+def _fake_session_records_with_affiliation(start: float, end: float) -> list[dict]:
+    return [
+        {"user_id": "marcus-okafor-tan", "turns": [
+            {"mood_after": {"affiliation": start}}
+        ]},
+        {"user_id": "marcus-okafor-tan", "turns": [
+            {"mood_after": {"affiliation": end}}
+        ]},
+    ]
+
+
+def test_pillars_all_pass_with_strong_signal():
+    pillars = compute_pillars(
+        qa_aggregate=_perfect_aggregate(),
+        callback_rate_final={"rate": 0.55},
+        personality_final={"recent_shifts": [{"trait": "openness"}] * 8},
+        session_records=_fake_session_records_with_affiliation(50.0, 75.0),
+        baseline_qa_aggregate={"TOTAL": {"accuracy": 0.45}},
+    )
+    by_name = {p.name: p for p in pillars}
+    assert by_name["P1"].passed
+    assert by_name["P2"].passed              # 100% - 45% = 55pt delta ≥ 40
+    assert by_name["P3"].passed
+    assert by_name["P4"].passed              # callback 55%, aff Δ +25, shifts 8
+    assert by_name["P5"].passed
+
+
+def test_p2_fails_open_when_no_baseline_provided():
+    """P2 must NOT silently pass when --compare-with is omitted."""
+    pillars = compute_pillars(
+        qa_aggregate=_perfect_aggregate(),
+        callback_rate_final={"rate": 0.55},
+        personality_final={"recent_shifts": [{}] * 5},
+        session_records=_fake_session_records_with_affiliation(50.0, 75.0),
+        baseline_qa_aggregate=None,
+    )
+    p2 = next(p for p in pillars if p.name == "P2")
+    assert not p2.passed
+    assert "baseline" in p2.notes.lower()
+
+
+def test_p4_fails_when_callback_rate_too_low():
+    pillars = compute_pillars(
+        qa_aggregate=_perfect_aggregate(),
+        callback_rate_final={"rate": 0.20},   # below 0.40 threshold
+        personality_final={"recent_shifts": [{}] * 5},
+        session_records=_fake_session_records_with_affiliation(50.0, 75.0),
+        baseline_qa_aggregate={"TOTAL": {"accuracy": 0.45}},
+    )
+    p4 = next(p for p in pillars if p.name == "P4")
+    assert not p4.passed
+
+
+def test_p5_fails_when_coaching_below_threshold():
+    agg = _perfect_aggregate()
+    agg["gameplay-coaching"] = {"n": 6, "correct": 4, "accuracy": 4 / 6}  # 67%
+    pillars = compute_pillars(
+        qa_aggregate=agg,
+        callback_rate_final={"rate": 0.55},
+        personality_final={"recent_shifts": [{}] * 5},
+        session_records=_fake_session_records_with_affiliation(50.0, 75.0),
+        baseline_qa_aggregate={"TOTAL": {"accuracy": 0.45}},
+    )
+    p5 = next(p for p in pillars if p.name == "P5")
+    assert not p5.passed

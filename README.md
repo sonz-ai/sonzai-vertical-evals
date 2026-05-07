@@ -26,8 +26,9 @@ Real consumer products ask for more:
   groups, esports rosters; "who" and "what" relationships, not just
   text retrieval.
 
-Sonzai exposes [Inventory](https://sonz.ai/docs/inventory) and
-[Knowledge Base](https://sonz.ai/docs/knowledge) as first-class APIs.
+Sonzai exposes [Inventory](https://github.com/sonz-ai/sonzai-python/blob/main/src/sonzai/resources/inventory.py)
+and [Knowledge Base](https://github.com/sonz-ai/sonzai-python/blob/main/src/sonzai/resources/knowledge.py)
+as first-class APIs.
 The benchmarks here exercise both, because that's what a vertical-
 deployed memory layer is asked to do.
 
@@ -35,7 +36,7 @@ deployed memory layer is asked to do.
 
 | Benchmark | Vertical | What it tests |
 |-----------|----------|---------------|
-| [`razer`](benchmarks/razer/) | AI gaming / consumer hardware | Family-of-four household across Razer's connected ecosystem (peripherals, AI desk companion, wearable headset, workstation PC, tablet). 30 sessions / ~250 turns over 6 simulated months, 29 hand-authored QAs across 9 categories: inventory, KB-relationship, multi-user-disambiguation, cross-device-continuity, single/multi-hop, temporal, habit-awareness, adversarial. |
+| [`razer`](benchmarks/razer/) | AI gaming / consumer hardware | Family-of-four household across Razer's connected ecosystem (peripherals, AI desk companion, wearable headset, workstation PC, tablet). 32 sessions / ~270 turns over 6 simulated months, 45 hand-authored QAs across 13 categories. Scored against a 5-pillar **AVA-readiness contract** that maps each pillar to a public Razer promise or a CES 2026 hands-on critique. |
 
 More verticals will land here over time.
 
