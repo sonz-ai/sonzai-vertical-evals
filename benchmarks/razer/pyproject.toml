@@ -5,7 +5,7 @@ description = "Razer customer-companion benchmark for the Sonzai Mind Layer."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "sonzai>=0.6.0",
+    "sonzai>=1.5.6",
     "google-genai>=0.7.0",
     "pydantic>=2.0",
     "tqdm>=4.66",
