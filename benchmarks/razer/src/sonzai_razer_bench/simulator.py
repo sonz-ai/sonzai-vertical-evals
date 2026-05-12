@@ -356,7 +356,14 @@ async def simulate_session(
         await _flush_user(pending_user_text, "")
 
     try:
-        await sessions.end_session(
+        # Use sessions.end (the polling wrapper) instead of the raw
+        # generated sessions.end_session — the wrapper polls
+        # /status/{processing_id} until the CE pipeline reaches a
+        # terminal state. Without polling, the bench moves to the next
+        # session before proposer/canonicalizer/verifier have written
+        # inventory_state, so iter-141ai (and any future write-side
+        # improvement) wouldn't be visible in QA reads.
+        await sessions.end(
             agent_id=agent_id,
             user_id=session.user_id,
             session_id=sid,
@@ -364,7 +371,7 @@ async def simulate_session(
             duration_seconds=max(60, len(record.turns) * 30),
         )
     except Exception as e:
-        logger.debug("sessions.end_session failed (non-fatal): %s", e)
+        logger.debug("sessions.end failed (non-fatal): %s", e)
 
     return record
 
