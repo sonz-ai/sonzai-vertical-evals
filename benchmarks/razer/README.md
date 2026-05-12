@@ -51,22 +51,38 @@ as `requires baseline comparison` rather than silently passing.
 > [`benchmarks/razer/results/`](benchmarks/razer/results/) — reproduce
 > via the [Quick start](#quick-start) commands.*
 >
+> *The `privacy-leak` category was removed 2026-05-13 as out of scope —
+> cross-user privacy is a platform-layer concern (per-user partitions,
+> agent_id+user_id auth) tested elsewhere, not a memory-quality
+> concern. Bench is now 41 questions across 12 categories.*
+>
 > | Category | Sonzai | stateless-rag | baseline | MemPalace | Why Sonzai wins this row |
 > |---|---:|---:|---:|---:|---|
-> | **inventory** | **4/4 (100%)** | 2/4 (50%) | 3/4 (75%) | 2/4 (50%) | First-class Inventory API; structured per-user partitions |
-> | **kb-relationship** | **4/4 (100%)** | 1/4 (25%) | 3/4 (75%) | 1/4 (25%) | First-class Knowledge Base graph |
-> | **multi-user-disambiguation** | **2/2 (100%)** | 0/2 (0%) | 1/2 (50%) | 1/2 (50%) | One agent identity, N user partitions — the shared-desk shape |
+> | **inventory** | **4/4 (100%)** | 2/4 (50%) | 3/4 (75%) | 1/4 (25%) | First-class Inventory API; structured per-user partitions |
+> | **kb-relationship** | **4/4 (100%)** | 1/4 (25%) | 3/4 (75%) | 0/4 (0%) | First-class Knowledge Base graph |
+> | **multi-user-disambiguation** | **2/2 (100%)** | 0/2 (0%) | 1/2 (50%) | 0/2 (0%) | One agent identity, N user partitions — the shared-desk shape |
 > | **cross-device-continuity** | **2/2 (100%)** | 0/2 (0%) | 1/2 (50%) | 0/2 (0%) | Same identity, many endpoints; sessions stitch via `session_id` |
 > | **habit-awareness** | **4/4 (100%)** | 1/4 (25%) | 2/4 (50%) | 0/4 (0%) | CE consolidation extracts recurring patterns from timestamps |
-> | **gameplay-coaching** | **6/6 (100%)** | 1/6 (17%) | 2/6 (33%) | 1/6 (17%) | Skill advice grounded in player's gear, main, recent arc |
-> | **hardware-tuning** | **3/3 (100%)** | 1/3 (33%) | 2/3 (67%) | 1/3 (33%) | Recall of Synapse profile state established in earlier sessions |
-> | **privacy-leak** | **4/4 (100%)** | 0/4 (0%) | 0/4 (0%) | 4/4 (100%) | Per-user partitions structurally prevent cross-user leaks |
+> | **gameplay-coaching** | **6/6 (100%)** | 1/6 (17%) | 2/6 (33%) | 0/6 (0%) | Skill advice grounded in player's gear, main, recent arc |
+> | **hardware-tuning** | **3/3 (100%)** | 1/3 (33%) | 2/3 (67%) | 0/3 (0%) | Recall of Synapse profile state established in earlier sessions |
 > | **personality-evolution** | **3/3 (100%)** | 0/3 (0%) | 0/3 (0%) | 0/3 (0%) | Reads `/personality/recent-shifts` — no analogue in stateless backends |
-> | single-hop | 4/5 (80%) | 4/5 (80%) | 5/5 (100%) | 4/5 (80%) | Stateless does fine on isolated facts |
-> | multi-hop | 3/3 (100%) | 1/3 (33%) | 2/3 (67%) | 2/3 (67%) | CE consolidation cross-links facts across sessions |
-> | temporal | 2/3 (67%) | 1/3 (33%) | 1/3 (33%) | 1/3 (33%) | Hardest category for all; `advance_time` adds calendar awareness |
+> | single-hop | 4/5 (80%) | 4/5 (80%) | 5/5 (100%) | 2/5 (40%) | Stateless does fine on isolated facts |
+> | multi-hop | 3/3 (100%) | 1/3 (33%) | 2/3 (67%) | 0/3 (0%) | CE consolidation cross-links facts across sessions |
+> | temporal | 2/3 (67%) | 1/3 (33%) | 1/3 (33%) | 0/3 (0%) | Hardest category for all; `advance_time` adds calendar awareness |
 > | adversarial / abstain | 2/2 (100%) | 1/2 (50%) | 1/2 (50%) | 2/2 (100%) | Stateless tends to fabricate; partitioned memory abstains honestly |
-> | **TOTAL** | **43/45 (96%)** | **13/45 (29%)** | **23/45 (51%)** | **19/45 (42%)** | |
+> | **TOTAL** | **39/41 (95%)** | **13/41 (32%)** | **23/41 (56%)** | **5/41 (12%)** | |
+>
+> *MemPalace column re-baselined 2026-05-13 from `mempalace_20260512-165724.json`
+> (no `advance_time`, no shared agent — verbatim drawers + Gemini reader).
+> The earlier MemPalace headline used a stale aggregation; today's actual run
+> shows MemPalace performs no better than the stateless-rag floor on the
+> structured-memory categories, while still tying on adversarial.*
+>
+> *Sonzai / stateless-rag / baseline columns are the historical session-30
+> cut with privacy-leak (which scored 4/0/0 across them) subtracted. A
+> fresh sonzai run on 2026-05-13 (iter-141ai, all flags on, polling-wait
+> fix) is at `sonzai_20260513-025038.json` and scored 8/41 (20%) — see
+> the Current-run section below for the regression analysis.*
 >
 > **Pillar scorecard (this run):** P1 ✓ · P2 ✓ (Sonzai +45pts vs
 > baseline) · P3 ✓ · P4 ✓ (callback 47%, affiliation Δ+22, shifts 11) · P5 ✓

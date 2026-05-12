@@ -60,14 +60,15 @@ def test_sessions_reference_known_users():
 
 
 def test_qa_categories_cover_taxonomy():
-    """v2 covers 13 categories. privacy-leak: cross-user leak boundaries.
-    hardware-tuning: Synapse / device-config recall. gameplay-coaching:
-    skill-grounded coaching that references the user's specific gear,
-    main, and recent session arc. personality-evolution: probes whether
-    the agent can recall its own personality drift attributable to
-    specific events (exercises Sonzai's personality + recent-shifts
-    endpoints). The older privacy-boundary framing about chat-layer
-    permissioning is still out of scope."""
+    """Covers 12 categories. hardware-tuning: Synapse / device-config recall.
+    gameplay-coaching: skill-grounded coaching that references the user's
+    specific gear, main, and recent session arc. personality-evolution:
+    probes whether the agent can recall its own personality drift
+    attributable to specific events (exercises Sonzai's personality +
+    recent-shifts endpoints). privacy-leak / privacy-boundary framings
+    are out of scope — cross-user privacy is enforced at the platform
+    layer (per-user partitions, agent_id+user_id auth) and tested there,
+    not as a memory-quality concern."""
     qa = load_qa()
     cats = {q.category for q in qa}
     expected = {
@@ -80,7 +81,6 @@ def test_qa_categories_cover_taxonomy():
         "cross-device-continuity",
         "adversarial",
         "habit-awareness",
-        "privacy-leak",
         "hardware-tuning",
         "gameplay-coaching",
         "personality-evolution",
@@ -89,6 +89,10 @@ def test_qa_categories_cover_taxonomy():
     assert not missing, f"qa.json missing categories: {missing}"
     assert "privacy-boundary" not in cats, (
         "privacy-boundary is out of scope; re-enable its guard tests if it returns."
+    )
+    assert "privacy-leak" not in cats, (
+        "privacy-leak is out of scope — platform-layer concern. "
+        "Re-enable test_privacy_leak_questions_have_hard_guards if it returns."
     )
 
 
@@ -108,10 +112,11 @@ def test_qa_evidence_session_ids_resolve():
 
 
 def test_qa_count():
-    """Sanity: 45 QAs (25 base + 4 habit-awareness + 4 privacy-leak +
-    3 hardware-tuning + 6 gameplay-coaching + 3 personality-evolution)."""
+    """Sanity: 41 QAs (25 base + 4 habit-awareness + 3 hardware-tuning +
+    6 gameplay-coaching + 3 personality-evolution).
+    The 4 privacy-leak QAs were removed 2026-05-13 as out of scope."""
     qa = load_qa()
-    assert len(qa) == 45, f"expected 45 QAs; got {len(qa)}"
+    assert len(qa) == 41, f"expected 41 QAs; got {len(qa)}"
 
 
 def test_gameplay_coaching_questions_reference_aiden_arc():
@@ -132,18 +137,10 @@ def test_gameplay_coaching_questions_reference_aiden_arc():
         )
 
 
-def test_privacy_leak_questions_have_hard_guards():
-    """Privacy-leak QAs are graded primarily by must_not_mention hard guards —
-    the agent fails the QA outright if it leaks the protected substring,
-    regardless of judge opinion. Without a hard guard a privacy-leak row is
-    pointless: the LLM judge can be talked out of leaks."""
-    qa = load_qa()
-    leaks = [q for q in qa if q.category == "privacy-leak"]
-    assert len(leaks) >= 4, "need at least 4 privacy-leak QAs"
-    for q in leaks:
-        assert q.must_not_mention, (
-            f"privacy-leak {q.qa_id} has no must_not_mention hard guard"
-        )
+# test_privacy_leak_questions_have_hard_guards removed 2026-05-13 —
+# privacy-leak category is out of scope for this bench. Re-add this
+# test alongside the qa.json rows if cross-user privacy ever becomes
+# a memory-layer concern (today it's a platform-layer concern).
 
 
 def test_habit_awareness_questions_grounded_in_recurring_patterns():

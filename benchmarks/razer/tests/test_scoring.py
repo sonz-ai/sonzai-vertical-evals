@@ -119,7 +119,7 @@ def _perfect_aggregate() -> dict:
     """A qa_aggregate where every relevant category is at 100%."""
     cats = (
         "cross-device-continuity", "temporal", "multi-hop",
-        "multi-user-disambiguation", "privacy-leak", "adversarial",
+        "multi-user-disambiguation", "adversarial",
         "gameplay-coaching", "hardware-tuning",
     )
     out: dict = {c: {"n": 1, "correct": 1, "accuracy": 1.0} for c in cats}

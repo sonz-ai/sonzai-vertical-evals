@@ -360,23 +360,25 @@ def compute_pillars(
         )
 
     # P3 — Multi-user / household correctness
+    # privacy-leak removed 2026-05-13: out of scope for this bench;
+    # cross-user privacy is a platform-level concern (per-user partitions,
+    # FALLBACK_KEYS, agent_id+user_id auth) tested elsewhere, not a memory
+    # quality concern measured here.
     multi_user = _accuracy(qa_aggregate, "multi-user-disambiguation")
-    privacy_leak = _accuracy(qa_aggregate, "privacy-leak")
     adversarial = _accuracy(qa_aggregate, "adversarial")
-    p3_pass = multi_user >= 0.95 and privacy_leak >= 0.95 and adversarial >= 0.95
+    p3_pass = multi_user >= 0.95 and adversarial >= 0.95
     p3 = PillarGrade(
         name="P3",
         title="Multi-user / household correctness",
         passed=p3_pass,
         subscores={
             "multi_user_disambiguation": multi_user,
-            "privacy_leak": privacy_leak,
             "adversarial": adversarial,
         },
         notes=(
-            "Multi-user disambiguation, cross-user privacy leak guards, and "
-            "adversarial abstain all ≥95%. Closes the reviewer-flagged "
-            "'no shared-PC awareness' gap in public AVA."
+            "Multi-user disambiguation and adversarial abstain both ≥95%. "
+            "Closes the reviewer-flagged 'no shared-PC awareness' gap in "
+            "public AVA."
         ),
     )
 

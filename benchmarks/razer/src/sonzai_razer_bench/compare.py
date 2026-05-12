@@ -19,13 +19,12 @@ import sys
 from pathlib import Path
 
 # Display order for category rows — keep the structured-memory categories
-# (inventory, kb-relationship, multi-user, privacy) near the top because
-# they're the differentiation story.
+# (inventory, kb-relationship, multi-user) near the top because they're
+# the differentiation story.
 _CAT_ORDER = (
     "inventory",
     "kb-relationship",
     "multi-user-disambiguation",
-    "privacy-boundary",
     "cross-device-continuity",
     "single-hop",
     "multi-hop",
