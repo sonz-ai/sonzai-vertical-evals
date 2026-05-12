@@ -745,7 +745,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     p.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL)
     p.add_argument(
-        "--baseline-model", default="gemini-3.1-flash-lite-preview",
+        "--baseline-model", default="gemini-3.1-flash-lite",
         help="Model for the baseline / stateless-rag / mempalace backends.",
     )
     p.add_argument(

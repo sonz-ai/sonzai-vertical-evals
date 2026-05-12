@@ -59,7 +59,7 @@ logger = logging.getLogger("sonzai_razer_bench.backends.mempalace")
 
 DEFAULT_SEARCH_K = 5
 DEFAULT_MAX_DRAWER_CHARS = 600
-DEFAULT_GEN_MODEL = "gemini-3.1-flash-lite-preview"
+DEFAULT_GEN_MODEL = "gemini-3.1-flash-lite"
 
 
 # ---------------------------------------------------------------------------

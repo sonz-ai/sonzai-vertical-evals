@@ -40,7 +40,7 @@ from .baseline import _format_inventory, _format_personas
 
 logger = logging.getLogger("sonzai_razer_bench.backends.stateless_rag")
 
-DEFAULT_MODEL = "gemini-3.1-flash-lite-preview"
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
 DEFAULT_EMBED_MODEL = "gemini-embedding-001"
 DEFAULT_TOP_K = 5
 

@@ -36,7 +36,7 @@ from .dataset import Session
 
 logger = logging.getLogger("sonzai_razer_bench.simulator")
 
-DEFAULT_JUDGE_MODEL = "gemini-3.1-flash-lite-preview"
+DEFAULT_JUDGE_MODEL = "gemini-3.1-flash-lite"
 
 
 # ---------------------------------------------------------------------------

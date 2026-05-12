@@ -32,7 +32,7 @@ from ..dataset import (
 
 logger = logging.getLogger("sonzai_razer_bench.backends.baseline")
 
-DEFAULT_MODEL = "gemini-3.1-flash-lite-preview"
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
 
 
 class _Answer(BaseModel):

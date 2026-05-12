@@ -26,7 +26,7 @@ from pydantic import BaseModel
 
 from .dataset import QA
 
-DEFAULT_JUDGE_MODEL = "gemini-3.1-flash-lite-preview"
+DEFAULT_JUDGE_MODEL = "gemini-3.1-flash-lite"
 
 
 @dataclass
