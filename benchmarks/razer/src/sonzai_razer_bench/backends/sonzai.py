@@ -35,7 +35,7 @@ from ..dataset import (
     QA,
     Session,
 )
-from ._compat import async_inventory, ensure_bench_agent_async
+from ._compat import async_sessions, ensure_bench_agent_async
 
 logger = logging.getLogger("sonzai_razer_bench.backends.sonzai")
 
@@ -66,92 +66,111 @@ async def ensure_agent(client: AsyncSonzai) -> str:
     return agent_id
 
 
-async def seed_inventory(
-    client: AsyncSonzai, *, agent_id: str, seed: InventorySeed
-) -> None:
-    """Seed Sonzai inventory state for each user before conversation.
+def _render_seed_messages(owner_display_name: str, items: list) -> list[dict]:
+    """Render an InventorySeed user's items as a user+assistant message pair.
 
-    Failure semantics (revised 2026-05-13):
-
-    Previously this function swallowed every Exception at debug level
-    with the comment "items will already exist on a re-run". That was
-    only true for 409 conflicts; transient 5xx / 502 / Gemini-down
-    failures during the original ingest also hit this path and went
-    invisible. Result: the bench ran against an empty inventory and
-    every inventory-category QA failed because the gold items were
-    never persisted. Diagnosed from prod log of razer_20260513-025038.
-
-    New behavior:
-      - 409 conflicts (item exists) are logged at INFO and counted as
-        ``existed`` — these are the expected re-run path.
-      - Any other exception is logged at WARN with the upstream error
-        and counted as ``failed``.
-      - At the end we log a single summary line at INFO with all three
-        counters (added / existed / failed).
-      - If failure rate exceeds 25% AND at least 1 failure occurred,
-        raise RuntimeError — running the conversation simulation +
-        QA against a half-empty inventory is wasted compute. Operators
-        get a loud failure instead of a silent one.
+    The user's turn enumerates ownership in natural language; the assistant
+    confirms registration. Same shape mempalace's session_000.md uses, so
+    both backends ingest functionally equivalent content through their
+    normal extraction pipelines — fair head-to-head on memory architecture,
+    not on privileged seed APIs.
     """
-    inv = async_inventory(client)
-    added = 0
-    existed = 0
-    failed = 0
-    failures: list[tuple[str, str, str]] = []  # (owner_id, item_id, error)
+    bullets = []
+    for it in items:
+        props_pairs = [f"{k}={v}" for k, v in (it.properties or {}).items()]
+        props_str = (" (" + ", ".join(props_pairs) + ")") if props_pairs else ""
+        bullets.append(f"- {it.label} [{it.item_type}]{props_str}")
+    user_text = (
+        f"Let me get my Razer setup on the record so you have it all in one "
+        f"place. I'm {owner_display_name}. Items I currently own / am "
+        f"associated with:\n" + "\n".join(bullets)
+    )
+    assistant_text = (
+        f"Got it, {owner_display_name}. I've registered your current "
+        f"Razer setup:\n" + "\n".join(bullets)
+    )
+    return [
+        {"role": "user", "content": user_text},
+        {"role": "assistant", "content": assistant_text},
+    ]
+
+
+async def seed_inventory(
+    client: AsyncSonzai, *, agent_id: str, seed: InventorySeed,
+    personas: Personas,
+) -> None:
+    """Seed inventory via the same path mempalace uses: a synthetic seed
+    session per user that goes through normal session-end extraction.
+
+    Previously this called inv.create_inventory_item() — a privileged
+    direct-write to the KB-graph inventory store. Two problems:
+      1. UNFAIR vs mempalace (mempalace writes session_000.md and lets
+         its miner extract drawers; sonzai got a write-shortcut).
+      2. INEFFECTIVE: sonzai chat retrieval reads from inventory_state +
+         atomic_facts, NOT the KB-graph inventory. So seeded items never
+         surfaced in chat context anyway.
+
+    New approach: render each user's seed as a synthetic user+assistant
+    exchange and feed it through sessions.end(messages=..., wait=True).
+    Extraction → inventory_proposer → reconciler → inventory_state.
+    Same pipeline as every conversational session. Same failure modes
+    surface (no silent swallowing). Fair comparison with mempalace's
+    markdown-mining seed path.
+
+    Raises RuntimeError if any user's seed session fails to ingest —
+    burning bench compute on missing inventory is worse than failing
+    fast.
+    """
+    sessions = async_sessions(client)
+    display_by_uid = {m.user_id: m.display_name for m in personas.members}
+
+    seeded_users = 0
+    skipped_users = 0
+    failures: list[tuple[str, str]] = []
 
     for owner_id, items in seed.items_by_owner.items():
-        for item in items:
-            try:
-                await inv.create_inventory_item(
-                    agent_id=agent_id,
-                    user_id=owner_id,
-                    item_type=item.item_type,
-                    label=item.label,
-                    properties=item.properties,
-                )
-                added += 1
-            except Exception as e:
-                # Distinguish "already exists" (expected re-run path)
-                # from real failures. The SDK surfaces the HTTP status
-                # via the exception class; 409 has Conflict in the name.
-                err_class = type(e).__name__
-                err_str = str(e)
-                if "Conflict" in err_class or "409" in err_str:
-                    existed += 1
-                    logger.info(
-                        "inventory seed item %s exists for %s (re-run path)",
-                        item.item_id,
-                        owner_id,
-                    )
-                else:
-                    failed += 1
-                    failures.append((owner_id, item.item_id, f"{err_class}: {err_str}"))
-                    logger.warning(
-                        "inventory seed item %s for %s FAILED: %s — bench "
-                        "will run against an incomplete inventory snapshot",
-                        item.item_id,
-                        owner_id,
-                        e,
-                    )
+        if not items:
+            skipped_users += 1
+            continue
+        display = display_by_uid.get(owner_id, owner_id)
+        messages = _render_seed_messages(display, items)
+        session_id = f"razer-seed-{owner_id}-{uuid.uuid4().hex[:8]}"
+        try:
+            await sessions.start(
+                agent_id=agent_id,
+                user_id=owner_id,
+                session_id=session_id,
+            )
+            await sessions.end(
+                agent_id=agent_id,
+                user_id=owner_id,
+                session_id=session_id,
+                total_messages=len(messages),
+                duration_seconds=60,
+                messages=messages,
+                wait=True,
+            )
+            seeded_users += 1
+            logger.info(
+                "inventory seed: session %s ingested for %s (%d items)",
+                session_id, owner_id, len(items),
+            )
+        except Exception as e:
+            failures.append((owner_id, f"{type(e).__name__}: {e}"))
+            logger.warning(
+                "inventory seed: session for %s FAILED: %s — bench will "
+                "run with incomplete inventory for this user",
+                owner_id, e,
+            )
 
-    total = added + existed + failed
     logger.info(
-        "inventory seed summary: added=%d existed=%d failed=%d (total=%d)",
-        added,
-        existed,
-        failed,
-        total,
+        "inventory seed summary: seeded_users=%d skipped_users=%d failed_users=%d",
+        seeded_users, skipped_users, len(failures),
     )
-
-    if total > 0 and failed > 0 and (failed / total) > 0.25:
-        # Loud failure: the bench is about to run against an empty-ish
-        # inventory which makes every inventory-category QA wrong by
-        # construction. Better to fail-fast than burn 5.5h of bench
-        # time on data that isn't there.
-        sample = "; ".join(f"{u}/{i}: {e}" for u, i, e in failures[:3])
+    if failures:
+        sample = "; ".join(f"{u}: {e}" for u, e in failures[:3])
         raise RuntimeError(
-            f"inventory seed failed too many items: {failed}/{total} "
-            f"({100 * failed / total:.0f}%) — first failures: {sample}"
+            f"inventory seed failed for {len(failures)} user(s): {sample}"
         )
 
 
@@ -171,7 +190,9 @@ async def init_backend(
     agent_id = await ensure_agent(client)
     user_ids = {m.user_id: m.user_id for m in personas.members}
     if seed:
-        await seed_inventory(client, agent_id=agent_id, seed=inventory_seed)
+        await seed_inventory(
+            client, agent_id=agent_id, seed=inventory_seed, personas=personas,
+        )
     return SonzaiBackendState(agent_id=agent_id, user_ids=user_ids)
 
 
