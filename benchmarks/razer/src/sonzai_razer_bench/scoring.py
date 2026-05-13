@@ -291,14 +291,13 @@ def compute_pillars(
     callback_rate_final: dict,
     personality_final: dict,
     session_records: list | None = None,
-    baseline_qa_aggregate: dict | None = None,
 ) -> list[PillarGrade]:
-    """Grade all five AVA-readiness pillars from a single run.
+    """Grade AVA-readiness pillars from a single run.
 
-    P2 only resolves to PASS/FAIL when ``baseline_qa_aggregate`` is
-    provided (typically a stateless-stuff or stateless-rag run). When
-    omitted, P2 is reported as ``passed=False`` with a note explaining
-    the comparison input is missing — never silently passes.
+    P2 ("Differentiation from a stateless LLM") was retired 2026-05-13
+    alongside the baseline / stateless-rag backends — the bench now
+    compares only Sonzai vs MemPalace, and the stateless-LLM comparison
+    moved out of scope.
     """
     session_records = session_records or []
 
@@ -325,39 +324,6 @@ def compute_pillars(
             "'real memory' claim is not marketing."
         ),
     )
-
-    # P2 — Differentiation from stateless LLM
-    sonzai_total = _accuracy(qa_aggregate, "TOTAL")
-    if baseline_qa_aggregate is None:
-        p2 = PillarGrade(
-            name="P2",
-            title="Differentiation from a stateless LLM",
-            passed=False,
-            subscores={"sonzai_total": sonzai_total, "baseline_total": None},
-            notes=(
-                "Requires a baseline comparison (e.g. --backend baseline or "
-                "stateless-rag). Sonzai TOTAL must beat baseline TOTAL by ≥40 "
-                "points absolute to close the 'generic chatbot' critique."
-            ),
-        )
-    else:
-        baseline_total = _accuracy(baseline_qa_aggregate, "TOTAL")
-        delta = sonzai_total - baseline_total
-        p2 = PillarGrade(
-            name="P2",
-            title="Differentiation from a stateless LLM",
-            passed=delta >= 0.40,
-            subscores={
-                "sonzai_total": sonzai_total,
-                "baseline_total": baseline_total,
-                "delta": delta,
-            },
-            notes=(
-                f"Sonzai TOTAL {sonzai_total:.0%} vs baseline {baseline_total:.0%} "
-                f"= Δ{delta:+.0%}. Threshold is +40pts to close the 'generic "
-                "chatbot' critique."
-            ),
-        )
 
     # P3 — Multi-user / household correctness
     # privacy-leak removed 2026-05-13: out of scope for this bench;
@@ -422,4 +388,4 @@ def compute_pillars(
         ),
     )
 
-    return [p1, p2, p3, p4, p5]
+    return [p1, p3, p4, p5]

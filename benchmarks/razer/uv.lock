@@ -1847,15 +1847,15 @@ wheels = [
 
 [[package]]
 name = "sonzai"
-version = "1.4.4"
+version = "1.5.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/83/da2151977a033de9a8b4240d2426e581237cf356bee85ae22f0b100cc1ce/sonzai-1.4.4.tar.gz", hash = "sha256:58940f51d421f4e2679927240e199855d55b0f97a2ec797ed6f049ea88aa6fa3", size = 2574348, upload-time = "2026-04-24T07:14:12.564Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/32/cd/9e6ad4db84040c0a91dfa605d56854743aebcf37060df7c58980d3327776/sonzai-1.5.6.tar.gz", hash = "sha256:f68259d3e042fe2a96030a010e85f9c6a67bec1a034dd4165d24c229e599937a", size = 25601933, upload-time = "2026-05-12T23:29:27.036Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1b/fb/08a458ffecd54ede2dd30307a243e89525be6504d4dcbf7236937786be74/sonzai-1.4.4-py3-none-any.whl", hash = "sha256:45801acd789862dfca951acf16a1a85208d37de501c8e46ace753018d602ea8e", size = 197083, upload-time = "2026-04-24T07:13:59.428Z" },
+    { url = "https://files.pythonhosted.org/packages/74/2d/93303033a04d3908dbe020219c3809a389a77838ae7c03b8aa628732c127/sonzai-1.5.6-py3-none-any.whl", hash = "sha256:f12ed03be0f3b16cce940abc8e773100a11b9812deb74d9e09bee3d69c6a7c5d", size = 224063, upload-time = "2026-05-12T23:29:23.076Z" },
 ]
 
 [[package]]
@@ -1885,7 +1885,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
-    { name = "sonzai", specifier = ">=0.6.0" },
+    { name = "sonzai", specifier = ">=1.5.6" },
     { name = "tqdm", specifier = ">=4.66" },
 ]
 provides-extras = ["dev", "mempalace"]

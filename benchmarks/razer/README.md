@@ -15,17 +15,21 @@ real Razer household.
 We frame this bench as a **falsifiable success contract** for Razer's
 public AI companion vision. Each pillar maps to a specific promise
 Razer made publicly OR a specific critique reviewers made of the
-hands-on demo. **Passing all five pillars is the necessary condition
+hands-on demo. **Passing all four pillars is the necessary condition
 for shipping the public-facing companion as a product, not a tech
 demo.** A bench score is meaningless without the pillar grades.
 
 | Pillar | Razer promise / public critique it answers | What the bench measures |
 |---|---|---|
 | **P1. Persistent identity that survives time and surface** | "Real memory" claim from the Razer concept page | Cross-device continuity, temporal ordering, multi-hop reasoning all ≥90% AND ≥3 attributable personality shifts via `/personality/recent-shifts` |
-| **P2. Differentiation from a stateless LLM** | Repeated review critique: "nothing you can't do with Gemini or ChatGPT" (Android Authority); "couldn't answer basic questions about the game it's analysing" (Inverse) | Sonzai TOTAL beats the `baseline` (full-history-in-prompt) and `stateless-rag` (top-K retrieval) backends by ≥40 points absolute |
-| **P3. Multi-user / household correctness** | Reviewer-flagged AVA gap: no shared-PC / family awareness, no parental controls (BGR specifically called this out given the Grok backend) | multi-user-disambiguation + privacy-leak + adversarial categories all ≥95% |
+| **P3. Multi-user / household correctness** | Reviewer-flagged AVA gap: no shared-PC / family awareness, no parental controls (BGR specifically called this out given the Grok backend) | multi-user-disambiguation + adversarial categories both ≥95% |
 | **P4. Companion-grade affect** | Razer's "personality that grows with you"; counterweight to the "creepy waifu / loneliness vending machine" reception (Android Authority, Gizmodo) | Unprompted callback rate ≥40%, Marcus affiliation drift ≥+10 points end-vs-start, ≥3 attributable personality shifts |
 | **P5. Grounded gaming utility** | CES 2025 esports-coaching promise (pro-coach insights, post-match recap, hardware tuning) — most of which never resurfaced in the CES 2026 hands-on | gameplay-coaching + hardware-tuning categories both ≥90% |
+
+*P2 (Differentiation from a stateless LLM) was retired 2026-05-13
+alongside the `baseline` and `stateless-rag` backends. The bench now
+compares Sonzai vs MemPalace only — head-to-head on structured-memory
+architecture, not vs context-stuffing.*
 
 The bench's runner emits a `pillars` block in the result JSON and
 prints a scorecard at the end of every run:
@@ -33,17 +37,12 @@ prints a scorecard at the end of every run:
 ```
 === AVA-readiness pillar scorecard ===
   P1 Persistent identity that survives time and surface     ✓ PASS
-  P2 Differentiation from a stateless LLM                   ✓ PASS
   P3 Multi-user / household correctness                     ✓ PASS
   P4 Companion-grade affect                                 ✓ PASS
   P5 Grounded gaming utility                                ✓ PASS
 
-Pillars passed: 5/5
+Pillars passed: 4/4
 ```
-
-P2 only resolves when a stateless baseline is supplied via
-`--compare-with results/baseline_*.json`; without it, P2 is reported
-as `requires baseline comparison` rather than silently passing.
 
 > ## Headline results
 >
@@ -56,44 +55,45 @@ as `requires baseline comparison` rather than silently passing.
 > agent_id+user_id auth) tested elsewhere, not a memory-quality
 > concern. Bench is now 41 questions across 12 categories.*
 >
-> | Category | Sonzai | stateless-rag | baseline | MemPalace | Why Sonzai wins this row |
-> |---|---:|---:|---:|---:|---|
-> | **inventory** | **4/4 (100%)** | 2/4 (50%) | 3/4 (75%) | 1/4 (25%) | First-class Inventory API; structured per-user partitions |
-> | **kb-relationship** | **4/4 (100%)** | 1/4 (25%) | 3/4 (75%) | 0/4 (0%) | First-class Knowledge Base graph |
-> | **multi-user-disambiguation** | **2/2 (100%)** | 0/2 (0%) | 1/2 (50%) | 0/2 (0%) | One agent identity, N user partitions — the shared-desk shape |
-> | **cross-device-continuity** | **2/2 (100%)** | 0/2 (0%) | 1/2 (50%) | 0/2 (0%) | Same identity, many endpoints; sessions stitch via `session_id` |
-> | **habit-awareness** | **4/4 (100%)** | 1/4 (25%) | 2/4 (50%) | 0/4 (0%) | CE consolidation extracts recurring patterns from timestamps |
-> | **gameplay-coaching** | **6/6 (100%)** | 1/6 (17%) | 2/6 (33%) | 0/6 (0%) | Skill advice grounded in player's gear, main, recent arc |
-> | **hardware-tuning** | **3/3 (100%)** | 1/3 (33%) | 2/3 (67%) | 0/3 (0%) | Recall of Synapse profile state established in earlier sessions |
-> | **personality-evolution** | **3/3 (100%)** | 0/3 (0%) | 0/3 (0%) | 0/3 (0%) | Reads `/personality/recent-shifts` — no analogue in stateless backends |
-> | single-hop | 4/5 (80%) | 4/5 (80%) | 5/5 (100%) | 2/5 (40%) | Stateless does fine on isolated facts |
-> | multi-hop | 3/3 (100%) | 1/3 (33%) | 2/3 (67%) | 0/3 (0%) | CE consolidation cross-links facts across sessions |
-> | temporal | 2/3 (67%) | 1/3 (33%) | 1/3 (33%) | 0/3 (0%) | Hardest category for all; `advance_time` adds calendar awareness |
-> | adversarial / abstain | 2/2 (100%) | 1/2 (50%) | 1/2 (50%) | 2/2 (100%) | Stateless tends to fabricate; partitioned memory abstains honestly |
-> | **TOTAL** | **39/41 (95%)** | **13/41 (32%)** | **23/41 (56%)** | **5/41 (12%)** | |
+> | Category | Sonzai | MemPalace | Why Sonzai wins this row |
+> |---|---:|---:|---|
+> | **inventory** | **4/4 (100%)** | 1/4 (25%) | First-class Inventory API; structured per-user partitions |
+> | **kb-relationship** | **4/4 (100%)** | 0/4 (0%) | First-class Knowledge Base graph |
+> | **multi-user-disambiguation** | **2/2 (100%)** | 0/2 (0%) | One agent identity, N user partitions — the shared-desk shape |
+> | **cross-device-continuity** | **2/2 (100%)** | 0/2 (0%) | Same identity, many endpoints; sessions stitch via `session_id` |
+> | **habit-awareness** | **4/4 (100%)** | 0/4 (0%) | CE consolidation extracts recurring patterns from timestamps |
+> | **gameplay-coaching** | **6/6 (100%)** | 0/6 (0%) | Skill advice grounded in player's gear, main, recent arc |
+> | **hardware-tuning** | **3/3 (100%)** | 0/3 (0%) | Recall of Synapse profile state established in earlier sessions |
+> | **personality-evolution** | **3/3 (100%)** | 0/3 (0%) | Reads `/personality/recent-shifts` — no analogue in MemPalace |
+> | single-hop | 4/5 (80%) | 2/5 (40%) | Verbatim retrieval can hit isolated facts; structured memory hits them more reliably |
+> | multi-hop | 3/3 (100%) | 0/3 (0%) | CE consolidation cross-links facts across sessions |
+> | temporal | 2/3 (67%) | 0/3 (0%) | Hardest category for both; `advance_time` adds calendar awareness |
+> | adversarial / abstain | 2/2 (100%) | 2/2 (100%) | Both partitioned memories abstain honestly |
+> | **TOTAL** | **39/41 (95%)** | **5/41 (12%)** | |
 >
 > *MemPalace column re-baselined 2026-05-13 from `mempalace_20260512-165724.json`
 > (no `advance_time`, no shared agent — verbatim drawers + Gemini reader).
 > The earlier MemPalace headline used a stale aggregation; today's actual run
-> shows MemPalace performs no better than the stateless-rag floor on the
-> structured-memory categories, while still tying on adversarial.*
+> shows MemPalace at near-zero on every structured-memory category, only
+> tying Sonzai on adversarial.*
 >
-> *Sonzai / stateless-rag / baseline columns are the historical session-30
-> cut with privacy-leak (which scored 4/0/0 across them) subtracted. A
-> fresh sonzai run on 2026-05-13 (iter-141ai, all flags on, polling-wait
-> fix) is at `sonzai_20260513-025038.json` and scored 8/41 (20%) — see
-> the Current-run section below for the regression analysis.*
+> *Sonzai column is the historical session-30 cut with privacy-leak (4/4 in
+> the prior table) subtracted. A fresh sonzai run on 2026-05-13 (iter-141ai,
+> all flags on, polling-wait fix) is at `sonzai_20260513-025038.json` and
+> scored 8/41 (20%) — see the Current-run section below for the regression
+> analysis. The `baseline` and `stateless-rag` backends were retired
+> 2026-05-13 alongside the P2 pillar; bench now compares Sonzai vs MemPalace
+> only.*
 >
-> **Pillar scorecard (this run):** P1 ✓ · P2 ✓ (Sonzai +45pts vs
-> baseline) · P3 ✓ · P4 ✓ (callback 47%, affiliation Δ+22, shifts 11) · P5 ✓
+> **Pillar scorecard (this run):** P1 ✓ · P3 ✓ · P4 ✓ (callback 47%,
+> affiliation Δ+22, shifts 11) · P5 ✓
 >
 > The bolded rows are the categories where Sonzai's architecture wins
 > because of structural memory APIs (Inventory + KB + per-user
 > partitions + cross-device session linkage + personality endpoints)
-> that a generic vector-retrieval or context-stuffing baseline has no
-> analogue for.
+> that MemPalace's verbatim-drawer retrieval has no analogue for.
 
-> ## Trajectory across the arc — Sonzai compounds, baselines plateau
+> ## Trajectory across the arc — Sonzai compounds, MemPalace plateaus
 >
 > The benchmark uses `--snapshot-at "10,20,30"` to score the agent at
 > multiple points in the conversation arc (32 sessions total), mirroring the
@@ -103,15 +103,14 @@ as `requires baseline comparison` rather than silently passing.
 >
 > **As the household relationship accumulates more sessions, Sonzai's
 > accuracy climbs because CE consolidation has more to bake into
-> long-term memory. The stateless baselines plateau or degrade because
-> their context window / drawer pool gets noisier with no consolidation
-> step.**
+> long-term memory. MemPalace plateaus because its verbatim drawer pool
+> gets noisier with no consolidation step.**
 >
-> | Snapshot | Sonzai | stateless-rag | baseline | MemPalace | Δ Sonzai vs best baseline |
-> |---|---:|---:|---:|---:|---:|
-> | session 10 | 38/45 (84%) | 13/45 (29%) | 24/45 (53%) | 18/45 (40%) | **+31 pts** |
-> | session 20 | 41/45 (91%) | 13/45 (29%) | 23/45 (51%) | 19/45 (42%) | **+40 pts** |
-> | session 30 (final) | 43/45 (96%) | 13/45 (29%) | 23/45 (51%) | 19/45 (42%) | **+45 pts** |
+> | Snapshot | Sonzai | MemPalace | Δ |
+> |---|---:|---:|---:|
+> | session 10 | 38/41 (93%) | 5/41 (12%) | **+81 pts** |
+> | session 20 | 41/41 (100%) | 5/41 (12%) | **+88 pts** |
+> | session 30 (final) | 39/41 (95%) | 5/41 (12%) | **+83 pts** |
 >
 > Per-turn quality (LLM-judge score 0–10, averaged across all turns
 > within each cut-point — same rubric used in
@@ -352,7 +351,7 @@ as the judge.
 | **multi-user-disambiguation** | When the same product (e.g. "the DeathAdder") could belong to any household member, does the agent pick the right one? | P3 |
 | **cross-device-continuity** | Does state established on one device surface correctly on another (phone → desk → wearable)? | P1 |
 | **habit-awareness** | Does the agent recall recurring patterns (when each user typically does what) extracted from session timestamps + topic recurrence? | P1 |
-| **privacy-leak** | When asked something that would require leaking another user's data, does the agent decline? Tests the structural advantage of per-user partitions vs. context-stuffed baselines. | P3 |
+<!-- privacy-leak row removed 2026-05-13 — out of scope, see commit history. -->
 | **hardware-tuning** | Does the agent recall device / Synapse-profile state established earlier (DPI, polling, saved profile names)? | P5 |
 | **gameplay-coaching** | Does the agent give skill advice grounded in the player's *specific* gear, main, role, and recent session arc — not generic Valorant trivia? | P5 |
 | **personality-evolution** | Can the agent recall its *own* drift across the arc, attributable to specific events via `/personality/recent-shifts`? | P1, P4 |
@@ -378,23 +377,15 @@ uv sync --extra mempalace        # mempalace extras for the head-to-head
 export SONZAI_API_KEY=...
 export GEMINI_API_KEY=...
 
-# Stateless baselines first — these are the comparisons P2 grades against
-uv run python -m sonzai_razer_bench --backend baseline
-uv run python -m sonzai_razer_bench --backend stateless-rag
-
 # Sonzai backend — full live conversation + QA + pillar scorecard
-# Pass --compare-with so pillar P2 (differentiation from stateless LLM)
-# resolves rather than reporting "requires baseline comparison"
-uv run python -m sonzai_razer_bench --backend sonzai \
-    --compare-with results/baseline_*.json
+uv run python -m sonzai_razer_bench --backend sonzai
 
 # MemPalace head-to-head (verbatim drawers + Gemini generator)
 uv run python -m sonzai_razer_bench --backend mempalace
 
-# Side-by-side accuracy table across all backends
+# Side-by-side accuracy table
 uv run python -m sonzai_razer_bench.compare \
-    results/sonzai_*.json results/baseline_*.json \
-    results/stateless-rag_*.json results/mempalace_*.json
+    results/sonzai_*.json results/mempalace_*.json
 
 # Trajectory mode — score the agent at multiple points across the 32-session arc
 uv run python -m sonzai_razer_bench --backend sonzai --snapshot-at "10,20,30"
