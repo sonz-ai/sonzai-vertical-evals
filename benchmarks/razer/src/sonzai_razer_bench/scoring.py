@@ -145,6 +145,7 @@ def llm_judge(
             response_mime_type="application/json",
             response_schema=JudgeVerdict,
             temperature=0.0,
+            thinking_config=gt.ThinkingConfig(thinking_budget=0),
         ),
     )
     text = resp.text
@@ -175,6 +176,7 @@ async def llm_judge_async(
             response_mime_type="application/json",
             response_schema=JudgeVerdict,
             temperature=0.0,
+            thinking_config=gt.ThinkingConfig(thinking_budget=0),
         ),
     )
     text = resp.text

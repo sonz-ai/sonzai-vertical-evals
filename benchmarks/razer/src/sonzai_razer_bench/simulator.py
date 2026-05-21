@@ -184,6 +184,7 @@ async def _judge_turn(
             response_mime_type="application/json",
             response_schema=TurnJudgeVerdict,
             temperature=0.0,
+            thinking_config=gt.ThinkingConfig(thinking_budget=0),
         ),
     )
     text = resp.text
